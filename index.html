@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard BDM KPB - Monitoring Pekerjaan & Status</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-2 md:mb-0">
+                <div class="bg-blue-600 p-2.5 rounded-lg text-white shadow-lg">
+                    <i class="fa-solid fa-chart-pie text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Dashboard BDM KPB</h1>
+                    <p class="text-xs text-slate-400">Monitoring Pekerjaan, Status Tagihan & Pencairan</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow flex items-center space-x-2">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Export CSV</span>
+                </button>
+                <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+                    <i class="fa-regular fa-calendar-days mr-1.5 text-blue-400"></i> Update 2024-2026
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full space-y-8">
+
+        <!-- Top KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Item Pekerjaan</p>
+                    <h3 id="kpi-total-item" class="text-2xl font-bold text-slate-900">0</h3>
+                    <span class="text-xs text-emerald-600 font-medium mt-1 inline-block"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Data Terverifikasi</span>
+                </div>
+                <div class="bg-blue-50 text-blue-600 p-4 rounded-xl">
+                    <i class="fa-solid fa-briefcase text-2xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Nilai Pekerjaan</p>
+                    <h3 id="kpi-total-nilai" class="text-xl font-bold text-slate-900">Rp 0</h3>
+                    <span class="text-xs text-blue-600 font-medium mt-1 inline-block"><i class="fa-solid fa-wallet mr-1"></i> Akumulasi Keseluruhan</span>
+                </div>
+                <div class="bg-emerald-50 text-emerald-600 p-4 rounded-xl">
+                    <i class="fa-solid fa-money-bill-wave text-2xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Proses Pencairan</p>
+                    <h3 id="kpi-pencairan" class="text-2xl font-bold text-slate-900">0</h3>
+                    <span class="text-xs text-amber-600 font-medium mt-1 inline-block"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Item Proses</span>
+                </div>
+                <div class="bg-amber-50 text-amber-600 p-4 rounded-xl">
+                    <i class="fa-solid fa-spinner text-2xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Proses Pengalihan Anggaran</p>
+                    <h3 id="kpi-anggaran" class="text-2xl font-bold text-slate-900">0</h3>
+                    <span class="text-xs text-indigo-600 font-medium mt-1 inline-block"><i class="fa-solid fa-file-invoice-dollar mr-1"></i> Status Anggaran</span>
+                </div>
+                <div class="bg-indigo-50 text-indigo-600 p-4 rounded-xl">
+                    <i class="fa-solid fa-building-columns text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Bar Chart: Nilai per Keterangan -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-chart-bar text-blue-600 mr-2"></i> Total Nilai Berdasarkan Status / Keterangan</h3>
+                </div>
+                <div class="relative flex-grow h-80">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Doughnut Chart: Jumlah Item per Keterangan -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i> Proporsi Jumlah Item per Keterangan</h3>
+                </div>
+                <div class="relative flex-grow h-80 flex justify-center items-center">
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Detail Data Pekerjaan & Status KPB</h3>
+                    <p class="text-xs text-slate-500">Gunakan filter di bawah untuk menelusuri data spesifik dengan cepat.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <!-- Search Input -->
+                    <div class="relative flex-grow md:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari judul pekerjaan..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <!-- Filter KET Dropdown -->
+                    <div class="w-full md:w-52">
+                        <select id="ketFilter" onchange="filterTable()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Semua Status / Keterangan</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-[500px]">
+                <table id="dataTable" class="w-full text-left border-collapse">
+                    <thead class="bg-slate-100 text-slate-700 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10">
+                        <tr>
+                            <th class="py-3 px-4 text-center">No</th>
+                            <th class="py-3 px-4">Judul Pekerjaan</th>
+                            <th class="py-3 px-4">Bagian / Kontrak</th>
+                            <th class="py-3 px-4 text-center">Tahun</th>
+                            <th class="py-3 px-4 text-right">Nilai (Rp)</th>
+                            <th class="py-3 px-4 text-center">Bulan</th>
+                            <th class="py-3 px-4">PIC</th>
+                            <th class="py-3 px-4">Status / Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs text-slate-600" id="tableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer / Pagination info -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+                <span id="tableInfo">Menampilkan semua data</span>
+                <span class="font-medium">Dashboard BDM KPB 2024-2026</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 mt-12 text-center text-xs">
+        <p>&copy; 2026 Dashboard BDM KPB. All Rights Reserved. Standalone Interactive Web App.</p>
+    </footer>
+
+    <!-- JavaScript Data and Logic -->
+    <script>
+        const rawData = [{"no": 1, "judul": "TENAGA SUPPORTING KPU, KPW, KPB (THR)", "bagian": "-", "tahun": 2024, "nilai": 18052776.0, "bulan": "-", "pic": "-", "ket": "Belum Ada Keterangan"}, {"no": 2, "judul": "ADMINISTRASI HONORER PEMBICARA WORKSHOP UPSKILLING TAD, ADMINISTRASI WORKSHOP, OPERASIONAL HC AGUSTUS 2026, ADMINISTRASI WORKSHOP KEUANGAN DIGITAL, ADMINISTRASI SEMINAR UKM & IKM, DAN AKOMODASI AUDITOR CFIA SMT, SMAP & SMK3\nGL NO. 171/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 16900000.0, "bulan": "Sept", "pic": "Furi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 3, "judul": "KERJA SAMA KEGIATAN PEMBERIAN BANTUAN DANA DAN OPERASIONAL FUNGSI COMM, REL & CSR RU BALONGAN", "bagian": "COMREL", "tahun": 2026, "nilai": 165000000.0, "bulan": "Sept", "pic": "Rizky", "ket": "Pekerjaan Masih Berjalan"}, {"no": 4, "judul": "PEKERJAAN JASA PENDUKUNG OPERASIONAL GENERAL SUPPORT UNTUK PROJECT R&P BALONGAN TAHUN 2026\nNO.018/KPI31600/2026-S0", "bagian": "REVIT", "tahun": 2026, "nilai": 90000000.0, "bulan": "Mei", "pic": "Tedi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 5, "judul": "PEKERJAAN RENOVASI FURNITURE SHELTER LEU - RCC - PRODUCTION 1 (PADI)\nNO SALES ORDER : VSO-2026-08-05-104194747", "bagian": "RCC", "tahun": 2026, "nilai": 25000000.0, "bulan": "Sept", "pic": "Mulyadi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 6, "judul": "PEKERJAAN RENOVASI SIPIL & INTERIOR SHELTER LEU - RCC - PRODUCTION 1 (PADI)\nNO SALES ORDER : VSO-2026-08-05-495320872", "bagian": "RCC", "tahun": 2026, "nilai": 87815384.61538462, "bulan": "Ags", "pic": "Mulyadi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 7, "judul": "PEMENUHAN KEBUTUHAN RDP PLAJU 14 (PADI)\nNO SALES ORDER : VSO-2026-09-22-565328260", "bagian": "REVIT", "tahun": 2026, "nilai": 55624000.0, "bulan": "Sept", "pic": "Tedi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 8, "judul": "PENGADAAN PEKERJAAN JASA PEMELIHARAAN RUTIN SIPILRUMAH DINAS PEKERJA DAN SITE OFFICE FUNGSI PROYEK REVITALISASI RCC RU VI BALONGAN\nNO. 014/KPI31600/2026-S0", "bagian": "REVIT", "tahun": 2026, "nilai": 395058356.0, "bulan": "Mei", "pic": "Tedi", "ket": "Pekerjaan Masih Berjalan"}, {"no": 9, "judul": "PENGADAAN RANTAI STAINLESS STELL, DLL (PADI)\nNO SALES ORDER : VSO-2026-09-14-697917421", "bagian": "OM", "tahun": 2026, "nilai": 5698870.0, "bulan": "Sept", "pic": "Iwa", "ket": "Pekerjaan Masih Berjalan"}, {"no": 10, "judul": "KEBUTUHAN APRESIASI PENGHARGAAN, DOORPRIZE, PERLENGKAPAN DLL KEGIATAN ANNUAL EMPLOYEE AWARD 2025\nGL NO. 109/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 1019460000.0, "bulan": "Juli", "pic": "Zaprijon", "ket": "Pengumpulan Eviden"}, {"no": 11, "judul": "APRESIASI AOC TAHUN 2025, OPERASIONAL BDI, KEGIATAN KOMUNITAS PEKERJA RU VI\nGL NO. 190/KPI49800/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 310000000.0, "bulan": "Juni", "pic": "Nina", "ket": "Proses Bast"}, {"no": 12, "judul": "BIAYA OPERASIONAL BDI AGUSTUS 2026, ADMINISTRASI WORKSHOP PPKHI, DAN ADMINISTRASI BIMTEK PENGADAAN BARANG DAN JASA\nGL NO. 128/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 74350000.0, "bulan": "Ags", "pic": "Furi", "ket": "Proses Bast"}, {"no": 13, "judul": "KEGIATAN FUN LEAGUE MINI SOCCER DAN ADMINISTRASI PUSAT PENGEMBANGAN STUDI NASIONAL\nGL NO. 115/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 205000000.0, "bulan": "Ags", "pic": "Furi", "ket": "Proses Bast"}, {"no": 14, "judul": "KEGIATAN PERINGATAN HUT KEMERDEKAAN RI KE-81 TAHUN FUNGSI PROJECT R&P BALONGAN TAHUN 2026", "bagian": "REVIT", "tahun": 2026, "nilai": 266500000.0, "bulan": "Ags", "pic": "Tedi", "ket": "Proses Bast"}, {"no": 15, "judul": "KEGIATAN SP-PBB TAHUN 2026\nNO.", "bagian": "HC", "tahun": 2026, "nilai": 550000000.0, "bulan": "Mei", "pic": "Nina", "ket": "Proses Bast"}, {"no": 16, "judul": "PEKERJAAN PEMBELIAN JAKET SHIFT PEKERJA RU VI BALONGAN TAHUN 2026\nGL NO. 012/KPI49800/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 532800000.0, "bulan": "feb", "pic": "Nina", "ket": "Proses Bast"}, {"no": 17, "judul": "PERPISAHAN DAN PELEPASAN PEKERJA PROJECT R&P BALONGAN TAHUN 2026", "bagian": "REVIT", "tahun": 2026, "nilai": 269514420.0, "bulan": "Ags", "pic": "Tedi", "ket": "Proses Bast"}, {"no": 18, "judul": "RENOVASI TUGU MAJAKERTA\nNO. 025/KPI490B0/2026-S0", "bagian": "ASSET", "tahun": 2026, "nilai": 174378344.0, "bulan": "Maret", "pic": "Adit", "ket": "Proses Pa"}, {"no": 19, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan September 2026", "bagian": "MA1", "tahun": 2026, "nilai": 51301500.0, "bulan": "Sept", "pic": "Anton", "ket": "Proses Penagihan"}, {"no": 20, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Bulan Mei 2026 (2 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5253077.0, "bulan": "mei", "pic": "Faiz", "ket": "Proses Penagihan"}, {"no": 21, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Bulan September 2026 (6 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5253077.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Penagihan"}, {"no": 22, "judul": "OPERASIONAL RT & RW BUMI PATRA, ADMINISTRASI WORKSHOP PERSATUAN INSINYUR INDONESIA (PII), ADMINISTRASI MEDIA TOEBAGUS NASIONAL, DAN ADMINISTRASI WORKSHOP & DIALOG K3\nGL NO. 075/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 86550000.0, "bulan": "Juli", "pic": "Furi", "ket": "Proses Penagihan"}, {"no": 23, "judul": "REDUCER DRAT DALAM 1\" TO 3/4\" (F TO F), WATER HOSE, HAND DRUM PUMP, DLL (PADI)\nNO SALES ORDER : VSO-2026-08-05-661098718", "bagian": "HSC", "tahun": 2026, "nilai": 86905261.0, "bulan": "Ags", "pic": "Hamzah", "ket": "Proses Penagihan"}, {"no": 24, "judul": "SEWA MESIN FOTOCOPY UNTUK OPERASIONAL PROYEK RDMP RU VI BALONGAN NO. 003/KPI31410/2025-S0", "bagian": "RDMP", "tahun": 2025, "nilai": 38309590.0, "bulan": "Jul", "pic": "Anas", "ket": "Proses Penagihan Di Softdoc"}, {"no": 25, "judul": "Apresiasi Atas Deteksi Dini & Pencegahan Insiden di Fungsi Production I (PADI)\nNO SALES ORDER : VSO-2026-09-04-070838913", "bagian": "DHC", "tahun": 2026, "nilai": 87792527.0, "bulan": "Sept", "pic": "Faisal", "ket": "Proses Pencairan"}, {"no": 26, "judul": "BIAYA MCU DAN PERLENGKAPAN KERJA TENAGA KONTRAK VOLUME TENAGA ADMINISTRASI FUNGSI RBO RU VI BALONGAN PERIODE AGUSTUS 2026 S/D JUNI 2027", "bagian": "RBO", "tahun": 2026, "nilai": 31585000.0, "bulan": "Juli", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 27, "judul": "BIAYA MCU, PERLENGKAPAN KERJA, TRAINING HSSE TENAGA KERJA PROGRAM PENGELOLAAN, UPDATING & MAINTAIN DATA SERTA DATA KELOLA BENEFIT FUNGSI HUMAN CAPITAL PT PPN UNIT BALONGAN PERIODE AGUSTUS 2026 S/D JULI 2027", "bagian": "HC", "tahun": 2026, "nilai": 9876400.0, "bulan": "Juli", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 28, "judul": "Dinas Tenaga Administrasi dan Kesekretariatan Manager Eng & Dev Bulan Agustus 2026", "bagian": "HC", "tahun": 2026, "nilai": 1560000.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 29, "judul": "Dinas Tenaga Administrasi dan Kesekretariatan Manager Eng & Dev Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 1560000.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 30, "judul": "Dinas Tenaga Administrasi dan Kesekretariatan SMOM & Manager Eng & Dev Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 3120000.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 31, "judul": "Dinas Tenaga Pengelolaan, Updating & Maintain Data Serta Data Kelola Benefit Fungsi Human Capital PT KPI Unit VI Balongan Bulan Agustus 2026", "bagian": "HC", "tahun": 2026, "nilai": 3120000.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 32, "judul": "Dinas Tenaga Pengelolaan, Updating & Maintain Data Serta Data Kelola Benefit Fungsi Human Capital PT KPI Unit VI Balongan Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 3120000.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 33, "judul": "Dinas Tenaga Program Digitalisasi & Pengelolaan Administrasi Mahasiswa PKL/Magang, Pekerja Internship Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 9360000.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 34, "judul": "Gaji Program Digitalisasi Data Pekerja & Pengeloaan Administrasi Mahasiswa PKL/Magang Pekerja Internship PT PPN Unit VI Balongan Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 26787537.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 35, "judul": "Gaji Tenaga Administrasi dan Kesekretariatan Manager Eng & Dev Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 5945196.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 36, "judul": "Gaji Tenaga Administrasi dan Kesekretariatan SMOM & Manager Eng & Dev Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 15971231.981019974, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 37, "judul": "Gaji Tenaga Kontrak Volume Administrasi Berbasis Digitalisasi di Fungsi Refinery Business & Optimazation di PT KPI Unit VI Balongan Bulan Agustus 2026", "bagian": "RBO", "tahun": 2026, "nilai": 6944474.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 38, "judul": "Gaji Tenaga Kontrak Volume Administrasi Berbasis Digitalisasi di Fungsi Refinery Business & Optimazation di PT KPI Unit VI Balongan Bulan September 2026", "bagian": "RBO", "tahun": 2026, "nilai": 6944474.0, "bulan": "Sept", "pic": "Andri", "ket": "Proses Pencairan"}, {"no": 39, "judul": "Gaji Tenaga Pengelolaan, Updating & Maintain Data Serta Data Kelola Benefit Fungsi Human Capital PT KPI Unit VI Balongan Bulan Agustus 2026", "bagian": "HC", "tahun": 2026, "nilai": 13003711.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 40, "judul": "Gaji Tenaga Pengelolaan, Updating & Maintain Data Serta Data Kelola Benefit Fungsi Human Capital PT KPI Unit VI Balongan Bulan September 2026", "bagian": "HC", "tahun": 2026, "nilai": 13003711.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 41, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Bulan Agustus 2026 (5 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5253077.0, "bulan": "ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 42, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Bulan Juli 2026 (4 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5253077.0, "bulan": "Juli", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 43, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Bulan Juni 2026 (3 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5253077.0, "bulan": "Juni", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 44, "judul": "Gaji Tenaga Volume Cleaning Area & Material Handling Bagian POC Bulan September 2026", "bagian": "POC", "tahun": 2026, "nilai": 17025940.0, "bulan": "Sept", "pic": "Muiz", "ket": "Proses Pencairan"}, {"no": 45, "judul": "KEGIATAN IDUL ADHA, OPERASIONAL RUTIN BDI, MAY DAY SP-PBB, MAYDAY SP-TAD, MAYDAY DISNAKER DAN KEGIATAN PERTIWI KARTINI\nGL NO. 122/KPI49800/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 300000000.0, "bulan": "apr", "pic": "Nina", "ket": "Proses Pencairan"}, {"no": 46, "judul": "KEGIATAN PROJECT R&P BALONGAN GOES TO CAMPUS TAHUN 2026\nGL NO. 017/PPNNF0500/2026-S9", "bagian": "REVIT", "tahun": 2026, "nilai": 143050000.0, "bulan": "Ags", "pic": "Tedi", "ket": "Proses Pencairan"}, {"no": 47, "judul": "KEGIATAN SILATURAHMI NASIONAL TRADISI MERPATI PUTIH 2026, KEGIATAN DAN KEBUTUHAN TIM MANAGEMENT JULI 2026, ADMINISTRASI WORKSHOP LINGKUNGAN HIDUP, DAN OPERASIONAL HC\nGL NO. 093/PPNKI1400/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 40875000.0, "bulan": "Juli", "pic": "Furi", "ket": "Proses Pencairan"}, {"no": 48, "judul": "Program Administrasi dan Kesekertariatan Manager Engineering & Development Unit VI Balongan Bulan Agustus 2026", "bagian": "HC", "tahun": 2026, "nilai": 5729665.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pencairan"}, {"no": 49, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Agustus 2025 (5 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123123.0, "bulan": "Ags", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 50, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan April 2025 (1 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123253.0, "bulan": "Apr", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 51, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Desember 2025 (9 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123123.0, "bulan": "Des", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 52, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Juli 2025 (4 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123253.0, "bulan": "Juli ", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 53, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Juni 2025 (3 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123253.0, "bulan": "Juni", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 54, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Mei 2025 (2 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123253.0, "bulan": "Mei", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 55, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan November 2025 (8 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123123.0, "bulan": "Nov", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 56, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan Oktober 2025 (7 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123123.0, "bulan": "Okt", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 57, "judul": "Gaji Tenaga Asisten Administrasi BDI Bulan September 2025 (6 Of 12)", "bagian": "HC", "tahun": 2025, "nilai": 5123123.0, "bulan": "Sept", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 58, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Februari 2026 (11 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 4983585.0, "bulan": "feb", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 59, "judul": "Gaji Tenaga Tenaga Asisten Administrasi BDI Januari 2026 (10 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 5123123.0, "bulan": "Jan", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 60, "judul": "THRK Tenaga Tenaga Asisten Administrasi BDI Februari 2026 (11 Of 12)", "bagian": "HC", "tahun": 2026, "nilai": 3881000.0, "bulan": "feb", "pic": "Faiz", "ket": "Proses Pengalihan Anggaran"}, {"no": 61, "judul": "AD-HOC PROFESSIONAL CERTIFICATION PEKERJA FUNGSI R&P PROJECT BALONGAN (PMP-PMI & CCP-AACE)\nNO. 001/PPNNF0300/2026-S7", "bagian": "RDMP", "tahun": 2026, "nilai": 16654475.0, "bulan": "Ags", "pic": "Rama", "ket": "Proses Po"}, {"no": 62, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan Agustus 2026", "bagian": "MA1", "tahun": 2026, "nilai": 45580743.0, "bulan": "ags", "pic": "Anton", "ket": "Proses Po"}, {"no": 63, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan Juli 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47294449.0, "bulan": "Juli", "pic": "Anton", "ket": "Proses Po"}, {"no": 64, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan Juni 2026", "bagian": "MA1", "tahun": 2026, "nilai": 50646257.0, "bulan": "Juni", "pic": "Anton", "ket": "Proses Po"}, {"no": 65, "judul": "PEKERJAAN AGENDA HANDOVER MATERIAL & DOKUMEN RESTORASI TANGKI MOGAS 42-T-301 E/F/G/H, PROYEK RELOKASI SPM 35.000 DWT, SERTA PROYEK DRY DOCK, TOWING, CHANGE OVER SPM 150.000 DWT", "bagian": "REVIT", "tahun": 2026, "nilai": 95000000.0, "bulan": "Ags", "pic": "Tedi", "ket": "Proses Po"}, {"no": 66, "judul": "PEKERJAAN PELAKSANAAN TRAINING OPERATION & MAINTENANCE PROCESS DAN ELECTRICAL & INSTRUMENT UNTUK P&C PEMULIHAN NEW EWTP RU VI BALONGAN", "bagian": "REVIT", "tahun": 2026, "nilai": 68700000.0, "bulan": "Sept", "pic": "Widakdo", "ket": "Proses Po"}, {"no": 67, "judul": "PEKERJAAN RENOVASI MUSHOLA DAN TOILET (PADI)\nNO SALES ORDER : VSO-2025-12-24-394266224", "bagian": "DHC", "tahun": 2026, "nilai": 87701626.0, "bulan": "Des", "pic": "Faisal", "ket": "Proses Po"}, {"no": 68, "judul": "PEKERJAAN RENOVASI RUANG LOBBY DAN GUDANG/TEMPAT ISTIRAHAT DRIVER (PADI)\nNO SALES ORDER : VSO-2025-12-24-326113090", "bagian": "DHC", "tahun": 2026, "nilai": 87590330.0, "bulan": "Des", "pic": "Faisal", "ket": "Proses Po"}, {"no": 69, "judul": "PEKERJAAN SOSIALISASI APLIKASI TIM MOOTER (PADI)\nNO SALES ORDER : VSO-2026-09-25-083592784", "bagian": "FINANCE", "tahun": 2026, "nilai": 85125000.0, "bulan": "Sept", "pic": "Fahrul", "ket": "Proses Po"}, {"no": 70, "judul": "PEKERJAAN RENOVASI RUANG STAFF ADM POC (PADI)\nNO SALES ORDER : VSO-2026-03-06-211162305", "bagian": "POC", "tahun": 2026, "nilai": 84749564.9999981, "bulan": "Maret", "pic": "Muiz", "ket": "Proses Sp3 Manual"}, {"no": 71, "judul": "ADMINISTRASI KONTRAK LAUNDRY, KEGIATAN DAN OPERASIONAL BDI FEBRUARI - MARET 2026 SERTA KEGIATAN KOMUNITAS PEKERJA\nGL NO. 061/KPI49800/2026-S8", "bagian": "HC", "tahun": 2026, "nilai": 345000000.0, "bulan": "Maret", "pic": "Nina", "ket": "Proses Verifikasi Ivendor"}, {"no": 72, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan April 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47244046.0, "bulan": "apr", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 73, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan Maret 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47420457.0, "bulan": "Maret", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 74, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Bulan Mei 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47420457.0, "bulan": "mei", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 75, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Februari 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47067635.0, "bulan": "feb", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 76, "judul": "Gaji Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Januari 2026", "bagian": "MA1", "tahun": 2026, "nilai": 47622069.0, "bulan": "Jan", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 77, "judul": "PEMERIKSAAN FISIK GENERAL MATERIAL TAHUN 2026 PT PERTAMINA PATRA NIAGA RU VI BALONGAN\nNO. 044/PPNKI1300/2026-S4", "bagian": "FINANCE", "tahun": 2026, "nilai": 123460000.0, "bulan": "Ags", "pic": "Cecep", "ket": "Proses Verifikasi Ivendor"}, {"no": 78, "judul": "PENGADAAN PEKERJAAN JASA  PENDUKUNG OPERASIONAL FUNGSI KONSTRUKSI UNTUK PROJECT R&P BALONGAN TAHUN 2026\nNO. SPK-001/PPNNF0100/2026-S0", "bagian": "REVIT", "tahun": 2026, "nilai": 50400000.0, "bulan": "Juni", "pic": "Jamal", "ket": "Proses Verifikasi Ivendor"}, {"no": 79, "judul": "THRK Tenaga Penyelesaian Pekerjaan Electrical & Instrument di Maintenance Area I PT Kilang Pertamina Internasional RU VI Balongan Februari 2026", "bagian": "MA1", "tahun": 2026, "nilai": 34878960.0, "bulan": "feb", "pic": "Anton", "ket": "Proses Verifikasi Ivendor"}, {"no": 80, "judul": "PROGRAM PENINGKATAN DERAJAT KESEHATAN PEKERJA FUNGSI OPI RU BALONGAN", "bagian": "OPI", "tahun": 2026, "nilai": 34638500.0, "bulan": "Ags", "pic": "Sutan", "ket": "Proses Verifikasi Softdoc"}, {"no": 81, "judul": "PENYELESAIAN PEKERJAAN ELECTRICAL DAN INSTRUMENT DI MAINTENANCE AREA I PT. KILANG PERTAMINA INTERNASIONAL - RU VI BALONGAN", "bagian": "MA1", "tahun": 2025, "nilai": 125966020.0, "bulan": "-", "pic": "Anton", "ket": "Tkdn"}];
+
+        let filteredData = [...rawData];
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        function initDashboard() {
+            // Populate KPI
+            document.getElementById('kpi-total-item').innerText = rawData.length;
+            const totalNilai = rawData.reduce((sum, item) => sum + item.nilai, 0);
+            document.getElementById('kpi-total-nilai').innerText = formatRupiah(totalNilai);
+            
+            const pencairanCount = rawData.filter(i => i.ket.toLowerCase().includes('pencairan')).length;
+            document.getElementById('kpi-pencairan').innerText = pencairanCount;
+
+            const anggaranCount = rawData.filter(i => i.ket.toLowerCase().includes('anggaran')).length;
+            document.getElementById('kpi-anggaran').innerText = anggaranCount;
+
+            // Populate KET Filter Dropdown
+            const uniqueKet = [...new Set(rawData.map(i => i.ket))].sort();
+            const selectEl = document.getElementById('ketFilter');
+            uniqueKet.forEach(ket => {
+                const opt = document.createElement('option');
+                opt.value = ket;
+                opt.innerText = ket;
+                selectEl.appendChild(opt);
+            });
+
+            renderTable(rawData);
+            renderCharts(rawData);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Tidak ada data yang ditemukan.</td></tr>`;
+                document.getElementById('tableInfo').innerText = 'Menampilkan 0 data';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? 'bg-white hover:bg-slate-50 transition' : 'bg-slate-50/50 hover:bg-slate-50 transition';
+                
+                // Badge color based on status
+                let badgeClass = 'bg-blue-100 text-blue-700';
+                const kLower = item.ket.toLowerCase();
+                if (kLower.includes('pencairan')) badgeClass = 'bg-emerald-100 text-emerald-700';
+                else if (kLower.includes('anggaran')) badgeClass = 'bg-amber-100 text-amber-700';
+                else if (kLower.includes('berjalan')) badgeClass = 'bg-indigo-100 text-indigo-700';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-center font-medium text-slate-500">${index + 1}</td>
+                    <td class="py-3 px-4 font-medium text-slate-900 max-w-xs truncate" title="${item.judul}">${item.judul}</td>
+                    <td class="py-3 px-4">${item.bagian}</td>
+                    <td class="py-3 px-4 text-center">${item.tahun}</td>
+                    <td class="py-3 px-4 text-right font-semibold text-slate-700">${formatRupiah(item.nilai)}</td>
+                    <td class="py-3 px-4 text-center">${item.bulan}</td>
+                    <td class="py-3 px-4">${item.pic}</td>
+                    <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeClass}">${item.ket}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('tableInfo').innerText = `Menampilkan ${data.length} dari ${rawData.length} data`;
+        }
+
+        function filterTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const selectedKet = document.getElementById('ketFilter').value;
+
+            filteredData = rawData.filter(item => {
+                const matchSearch = item.judul.toLowerCase().includes(searchText) || item.bagian.toLowerCase().includes(searchText) || item.pic.toLowerCase().includes(searchText);
+                const matchKet = selectedKet === '' || item.ket === selectedKet;
+                return matchSearch && matchKet;
+            });
+
+            renderTable(filteredData);
+        }
+
+        let barChartInstance = null;
+        let doughnutChartInstance = null;
+
+        function renderCharts(data) {
+            // Aggregate data by KET
+            const summaryMap = {};
+            data.forEach(item => {
+                if (!summaryMap[item.ket]) {
+                    summaryMap[item.ket] = { count: 0, nilai: 0 };
+                }
+                summaryMap[item.ket].count += 1;
+                summaryMap[item.ket].nilai += item.nilai;
+            });
+
+            // Sort by nilai descending
+            const sortedKeys = Object.keys(summaryMap).sort((a, b) => summaryMap[b].nilai - summaryMap[a].nilai);
+            const labels = sortedKeys;
+            const nilaiData = sortedKeys.map(k => summaryMap[k].nilai);
+            const countData = sortedKeys.map(k => summaryMap[k].count);
+
+            // Bar Chart (Total Nilai)
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Nilai (Rp)',
+                        data: nilaiData,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' Nilai: ' + formatRupiah(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1e9) return (value / 1e9).toFixed(1) + ' M';
+                                    if (value >= 1e6) return (value / 1e6).toFixed(0) + ' Jt';
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            // Doughnut Chart (Jumlah Item)
+            const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+            const backgroundColors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316', '#64748b'
+            ];
+
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: countData,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "No,Judul Pekerjaan,Bagian/Kontrak,Tahun,Nilai,Bulan,PIC,Keterangan\n";
+            
+            filteredData.forEach(item => {
+                let row = [item.no, `"${item.judul.replace(/"/g, '""')}"`, `"${item.bagian}"`, item.tahun, item.nilai, `"${item.bulan}"`, `"${item.pic}"`, `"${item.ket}"`];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "dashboard_bdm_kpb_filtered.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.onload = initDashboard;
+    </script>
+</body>
+</html>
